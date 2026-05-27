@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>智能填单助手 · 企业微信表格</title>
+    <!-- Html5Qrcode 扫码库 (轻量支持条形码/二维码) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #e9eef4 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 24px 20px;
+            min-height: 100vh;
+        }
+
+        .form-container {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* 卡片 */
+        .card {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(0px);
+            border-radius: 36px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.02);
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e6f5c, #2c9a8e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .header p {
+            color: #5f7f9c;
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        /* 表单样式 */
+        .field-group {
+            margin-bottom: 22px;
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1f3b4c;
+            margin-bottom: 8px;
+        }
+
+        .field-label .required {
+            color: #e5484d;
+            font-size: 0.8rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            border: 1.5px solid #e2e9f2;
+            border-radius: 24px;
+            background: #ffffff;
+            transition: all 0.2s;
+            outline: none;
+            font-family: inherit;
+            color: #1f2f3e;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #2c9a8e;
+            box-shadow: 0 0 0 3px rgba(44, 154, 142, 0.15);
+        }
+
+        .scan-btn {
+            background: #1e6f5c;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 18px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(30,111,92,0.2);
+        }
+
+        .scan-btn:hover {
+            background: #145c4b;
+            transform: scale(0.97);
+        }
+
+        /* 扫码器容器 */
+        .scanner-container {
+            margin-top: 12px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #1e2a36;
+            position: relative;
+            display: none;
+        }
+        .scanner-container.active {
+            display: block;
+        }
+        #qr-reader {
+            width: 100%;
+            border: none;
+        }
+        #qr-reader video {
+            border-radius: 20px;
+            width: 100%;
+        }
+        .close-scanner {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            cursor: pointer;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        /* 下拉选项自定义 */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f7f9c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(105deg, #1e6f5c, #2c9a8e);
+            border: none;
+            padding: 16px;
+            border-radius: 44px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 8px 18px rgba(30,111,92,0.25);
+            margin-top: 12px;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 28px;
+            left: 20px;
+            right: 20px;
+            background: #1f2f3e;
+            color: white;
+            text-align: center;
+            padding: 12px 20px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .toast-msg.show {
+            opacity: 1;
+        }
+
+        .info-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #7c94aa;
+            margin-top: 16px;
+        }
+
+        hr {
+            margin: 12px 0;
+            border: none;
+            border-top: 1px solid #e4ecf5;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @media (max-width: 520px) {
+            body { padding: 16px; }
+            .card { padding: 22px 18px; }
+        }
+    </style>
+</head>
+<body>
+<div class="form-container">
+    <div class="card">
+        <div class="header">
+            <h1>📋 快捷报修单</h1>
+            <p>扫码录入 · 实时同步至智能表格</p>
+        </div>
+
+        <!-- 条码字段 + 扫码按钮 -->
+        <div class="field-group">
+            <div class="field-label">
+                <span>🔖 条码 / Barcode</span>
+                <span class="required">*</span>
+            </div>
+            <div class="input-wrapper">
+                <input type="text" id="barcodeInput" placeholder="支持扫码或手动输入" autocomplete="off">
+                <button type="button" class="scan-btn" id="startScanBtn">📷 扫码</button>
+            </div>
+            <!-- 扫码摄像头区域 -->
+            <div id="scannerContainer" class="scanner-container">
+                <button class="close-scanner" id="closeScannerBtn">✕ 关闭</button>
+                <div id="qr-reader" style="width:100%"></div>
+            </div>
+        </div>
+
+        <!-- 问题分类 (下拉) -->
+        <div class="field-group">
+            <div class="field-label">
+                <span>⚠️ 问题分类</span>
+                <span class="required">*</span>
+            </div>
+            <select id="categorySelect">
+                <option value="" disabled selected>—— 请选择故障类型 ——</option>
+                <option value="死灯">💡 死灯 / LED不亮</option>
+                <option value="撞灯刮灯">🔨 撞灯 / 刮灯</option>
+                <option value="灯珠缺陷">🧩 灯珠缺陷 / 毛毛虫</option>
+                <option value="更换IC">⚙️ 更换IC / 驱动</option>
+                <option value="电阻电容故障">📟 电阻 / 电容故障</option>
+                <option value="排针/排线问题">🔌 排针 / 排线不良</option>
+                <option value="其他维修">🛠️ 其他维修</option>
+                <option value="没问题(NFF)">✅ 没问题 / NFF</option>
+            </select>
+        </div>
+
+        <!-- Qty (数量) -->
+        <div class="field-group">
+            <div class="field-label">
+                <span>🔢 数量 (Qty)</span>
+                <span class="required">*</span>
+            </div>
+            <input type="number" id="qtyInput" value="1" min="1" step="1" placeholder="维修/更换数量">
+        </div>
+
+        <!-- 备注 -->
+        <div class="field-group">
+            <div class="field-label">
+                <span>📝 备注 / 补充说明</span>
+            </div>
+            <textarea id="remarkInput" placeholder="例：灯珠位置、IC位号、异常现象等"></textarea>
+        </div>
+
+        <button class="btn-submit" id="submitBtn">🚀 提交至企业微信表格</button>
+        <div class="info-note">
+            ⚡ 数据将推送至智能表格 Webhook，支持实时汇总
+        </div>
+    </div>
+</div>
+<div id="toastMsg" class="toast-msg">✨ 提示信息</div>
+
+<script>
+    // ---------- 配置 ----------
+    const WEBHOOK_URL = "https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=5g1pnJxFXJWuZ7mmzWh9i7fY3DXZYG6az5nckpwAnkTxu3WjwhYlDZd9EZ7yLuB3bDG1cg22Jr4MuUXkZnC9dQcfi8rEAR1NxgFSoiHzhaR5";
+    
+    // 字段映射 (严格按照 schema)
+    const SCHEMA_MAP = {
+        barcodeFieldId: "f3PByd",
+        categoryFieldId: "fa313S",
+        qtyFieldId: "fwTqKL",
+        remarkFieldId: "frjAhn"
+    };
+
+    // 扫码器实例
+    let html5QrCode = null;
+    let isScanning = false;
+
+    // DOM 元素
+    const barcodeInput = document.getElementById('barcodeInput');
+    const categorySelect = document.getElementById('categorySelect');
+    const qtyInput = document.getElementById('qtyInput');
+    const remarkInput = document.getElementById('remarkInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const scannerContainer = document.getElementById('scannerContainer');
+    const startScanBtn = document.getElementById('startScanBtn');
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+
+    // 提示组件
+    function showMessage(text, isError = false) {
+        const toast = document.getElementById('toastMsg');
+        toast.innerText = text;
+        toast.style.backgroundColor = isError ? '#c23d3d' : '#1f6e5c';
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.style.backgroundColor = '#1f2f3e';
+        }, 2800);
+    }
+
+    // 停止扫码并隐藏视频区域
+    async function stopScanner() {
+        if (html5QrCode && isScanning) {
+            try {
+                await html5QrCode.stop();
+                isScanning = false;
+            } catch (err) {
+                console.warn("停止扫码出错", err);
+            }
+        }
+        scannerContainer.classList.remove('active');
+    }
+
+    // 初始化扫码器 (每次开启时重新创建)
+    async function startScanner() {
+        // 停止已有实例
+        if (html5QrCode && isScanning) {
+            await stopScanner();
+        }
+        // 清空容器
+        const readerDiv = document.getElementById('qr-reader');
+        readerDiv.innerHTML = ''; 
+        scannerContainer.classList.add('active');
+        
+        html5QrCode = new Html5Qrcode("qr-reader");
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            // 扫描成功，填入条码输入框
+            barcodeInput.value = decodedText;
+            showMessage(`✅ 已扫描: ${decodedText}`, false);
+            // 自动关闭摄像头
+            stopScanner();
+        };
+        const config = { fps: 10, qrbox: { width: 250, height: 180 } };
+        try {
+            await html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+            isScanning = true;
+        } catch (err) {
+            console.error("启动摄像头失败", err);
+            showMessage("📷 无法启动摄像头，请检查权限或使用手动输入", true);
+            scannerContainer.classList.remove('active');
+            html5QrCode = null;
+        }
+    }
+
+    // 关闭按钮事件
+    closeScannerBtn.addEventListener('click', () => {
+        stopScanner();
+    });
+
+    startScanBtn.addEventListener('click', () => {
+        // 如果已经显示且正在扫描，先关闭再开（重置）
+        if (scannerContainer.classList.contains('active')) {
+            stopScanner().then(() => {
+                startScanner();
+            });
+        } else {
+            startScanner();
+        }
+    });
+
+    // 表单验证 & 构造 webhook payload
+    function buildWebhookPayload() {
+        // 条码校验
+        const barcode = barcodeInput.value.trim();
+        if (!barcode) {
+            showMessage("请填写或扫描条码", true);
+            return null;
+        }
+        // 问题分类校验
+        const category = categorySelect.value;
+        if (!category) {
+            showMessage("请选择问题分类", true);
+            return null;
+        }
+        // qty 校验 (数字且大于0)
+        let qty = parseInt(qtyInput.value, 10);
+        if (isNaN(qty) || qty < 0) {
+            qty = 0;
+        }
+        if (qty === 0) {
+            // 业务规则：只有报废情况才写0，允许0但提示一下
+            const confirmZero = confirm("数量为0，仅适用于报废场景，确定提交吗？");
+            if (!confirmZero) return null;
+        }
+        const remark = remarkInput.value.trim() || "";
+
+        // 构造 values (严格按照 Webhook 示例格式)
+        // 注意: 问题分类字段 fa313S 的值格式为 [{"text": "分类名称"}]
+        const values = {
+            [SCHEMA_MAP.barcodeFieldId]: barcode,
+            [SCHEMA_MAP.categoryFieldId]: [{ "text": category }],
+            [SCHEMA_MAP.qtyFieldId]: qty,
+            [SCHEMA_MAP.remarkFieldId]: remark
+        };
+        
+        const payload = {
+            schema: {
+                [SCHEMA_MAP.barcodeFieldId]: "条码",
+                [SCHEMA_MAP.categoryFieldId]: "问题分类",
+                [SCHEMA_MAP.qtyFieldId]: "qty",
+                [SCHEMA_MAP.remarkFieldId]: "备注"
+            },
+            add_records: [
+                { values }
+            ]
+        };
+        return payload;
+    }
+
+    // 提交数据到 Webhook
+    async function submitToWebhook(payload) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "⏳ 提交中...";
+        try {
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+            const responseData = await response.json();
+            if (response.ok && (responseData.errcode === 0 || responseData.code === 0 || responseData.success !== false)) {
+                // 企业微信webhook常见返回 errcode:0 表示成功
+                const errcode = responseData.errcode;
+                if (errcode === undefined || errcode === 0) {
+                    showMessage("🎉 提交成功！数据已同步至智能表格", false);
+                    // 可选：清空表单（保留条码？可不清空，为了连续录入，只清空扫码项和分类重置？按体验：保留条码让用户继续，但建议只清空条码以外的部分？用户选择）
+                    // 这里根据大多数填单习惯：提交成功后清空条码和备注，保持数量默认1，分类重置提示
+                    if (confirm("提交成功！是否清空表单继续录入？（条码将保留以便连续扫码）")) {
+                        // 不清条码，保留以便快速下一单；清空分类、备注、重置数量为1
+                        categorySelect.value = "";
+                        remarkInput.value = "";
+                        qtyInput.value = "1";
+                        barcodeInput.value = "";   // 清空条码让下一扫码更干净（避免误提交重复）
+                    } else {
+                        // 仅清空条码和备注，分类置默认
+                        barcodeInput.value = "";
+                        remarkInput.value = "";
+                    }
+                } else {
+                    showMessage(`❌ 接口错误: ${responseData.errmsg || '未知错误'}`, true);
+                }
+            } else {
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const errJson = await response.json();
+                    errorMsg = errJson.errmsg || errJson.message || errorMsg;
+                } catch(e) {}
+                showMessage(`提交失败: ${errorMsg}`, true);
+            }
+        } catch (error) {
+            console.error("网络请求异常", error);
+            showMessage("网络错误，请检查网络或重试", true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "🚀 提交至企业微信表格";
+        }
+    }
+
+    // 表单提交入口
+    function onFormSubmit() {
+        const payload = buildWebhookPayload();
+        if (payload) {
+            submitToWebhook(payload);
+        }
+    }
+
+    submitBtn.addEventListener('click', onFormSubmit);
+
+    // 支持回车快捷提交 (在输入框按回车)
+    const inputs = [barcodeInput, qtyInput, remarkInput];
+    inputs.forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                onFormSubmit();
+            }
+        });
+    });
+
+    // 页面关闭前清理摄像头资源
+    window.addEventListener('beforeunload', () => {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop().catch(e => console.warn);
+        }
+    });
+
+    // 初始示例: 可显示默认提示
+    console.log("智能填单助手已启动 | Webhook目标已配置");
+    // 可选填充 demo 数据以测试（便于演示，但注释掉让用户清空体验）
+    // 默认不做预填充，保持空白。
+</script>
+</body>
+</html>
